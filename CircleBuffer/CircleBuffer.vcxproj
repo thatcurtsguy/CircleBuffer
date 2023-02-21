@@ -141,7 +141,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\buffer\buffer.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\simulation\graphics.cpp" />
+    <ClCompile Include="src\simulation\physics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="openal32.dll" />
@@ -157,7 +160,9 @@
     <None Include="sfml-window-d-2.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\simulation.hpp" />
+    <ClInclude Include="src\buffer\Buffer.hpp" />
+    <ClInclude Include="src\object.hpp" />
+    <ClInclude Include="src\simulation\simulation.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

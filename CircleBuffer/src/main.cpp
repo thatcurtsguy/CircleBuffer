@@ -1,15 +1,22 @@
-#include <SFML/Graphics.hpp>
-#include "simulation.hpp"
+#include "simulation/simulation.hpp"
+#include <ctime>
 
 int main()
 {
-	Settings simulationSettings(
-		1500,
+	// initilising random
+	std::srand(static_cast<unsigned>(time(NULL)));
+
+	const Settings simulationSettings(
+		1920,
 		1000,
-		144,
+		300,
 		false,
 
-		"Vertex Buffer Simulation"
+		"Vertex Buffer Simulation",
+
+		500'000,
+		1,
+		2
 	);
 
 	Simulation simulation(simulationSettings);
