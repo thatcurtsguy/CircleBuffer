@@ -39,7 +39,7 @@ class Buffer
 	const unsigned int m_ObjectPoints;
 	const unsigned int m_verticesMultiplier;
 	unsigned int m_totalExpectedVertices;
-	const double PI = 3.14159265358979323846;
+	const double PI = 3.14159265358979;
 
 	sf::VertexBuffer m_VertexBuffer;
 	std::vector<sf::Vertex> m_vertices;
@@ -52,6 +52,8 @@ public:
 	~Buffer() = default;
 
 	[[nodiscard]] Object add(sf::Vector2f position, double radius, sf::Color color);
+	std::vector<sf::Vertex>* getVertices() { return &m_vertices; }
+
 	void remove(const Object* object);
 	void render(sf::RenderTarget* renderTarget) const;
 	void update();

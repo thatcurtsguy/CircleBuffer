@@ -13,6 +13,7 @@ struct Settings
 	const unsigned int screenWidth;
 	const unsigned int screenHeight;
 	const unsigned int frameRate;
+	const unsigned int summonCount;
 
 	const bool vSync;
 

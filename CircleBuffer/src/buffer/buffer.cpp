@@ -85,14 +85,16 @@ void Buffer::update()
 
 std::vector<sf::Vertex> Buffer::createTriangleVertices(const double radius, const sf::Vector2f position) const
 {
-	std::vector<sf::Vertex> triangles;
-	triangles.reserve(static_cast<int>(m_ObjectPoints * 3));
+	std::vector<sf::Vertex> triangles(static_cast<int>(m_ObjectPoints * 3));
 
+	unsigned int index = 0;
 	for (unsigned int i = 0; i < m_ObjectPoints; i++)
 	{
-		triangles.emplace_back(sf::Vertex({ position + idxToCoords(i + 0, radius) })); // vertex 1
-		triangles.emplace_back(sf::Vertex({ position + idxToCoords(i + 1, radius) })); // vertex 2
-		triangles.emplace_back(position); // vertex center
+		triangles[index + 0] = sf::Vertex({position + idxToCoords(i + 0, radius)}); // vertex 1
+		triangles[index + 1] = sf::Vertex({ position + idxToCoords(i + 1, radius) }); // vertex 2
+		triangles[index + 2] = position; // vertex center
+
+		index += 3;
 	}
 	return triangles;
 }
@@ -115,6 +117,8 @@ sf::Vector2f Buffer::idxToCoords(const unsigned idx, const double radius) const
 
 unsigned Buffer::scaleIndex(const unsigned index, const bool scaleUp) const
 {
+	// false = scale down, true = scale up.
+	// this function is used to convert indexes from the m_vertices and m_verticesIndexes containers
 	const unsigned int scaleFactor = m_ObjectPoints * m_verticesMultiplier;
 	if (scaleUp)
 		return index * scaleFactor;

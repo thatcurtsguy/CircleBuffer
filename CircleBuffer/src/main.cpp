@@ -10,13 +10,14 @@ int main()
 		1920,
 		1000,
 		300,
+		20,
 		false,
 
 		"Vertex Buffer Simulation",
 
-		500'000,
-		1,
-		2
+		50'000,
+		6,
+		6
 	);
 
 	Simulation simulation(simulationSettings);

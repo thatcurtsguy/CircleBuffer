@@ -45,6 +45,7 @@ void Simulation::tickSim()
 	// rendering
 	objectInteraction();
 	m_buffer.render(&m_window);
+	m_buffer.update();
 
 	// finishing the frame
 	displayFrameRate();
@@ -85,7 +86,7 @@ void Simulation::objectInteraction()
 	const float r = 70;
 
 	if (mouseSide == false)
-		for (int i{ 0 }; i < 100; i++)
+		for (int i{ 0 }; i < summonCount; i++)
 		{
 			const sf::Vector2f position(mouse.x + randint(-r, r), mouse.y + randint(-r, r));
 			addObject(position, false);
