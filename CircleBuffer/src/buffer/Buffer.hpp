@@ -5,6 +5,11 @@
  * TODO:
  * - apon generation, turn all of the vertecies into circle molds so they can be processed
  * - custom "overflow" error message
+ * - fix the removal bug
+ *
+ * Update optimisation:
+ * - keep track of what verticies indexes have been updated up untill the user calles the update function
+ * - then clear the container
  */
 
 struct Object
@@ -26,9 +31,12 @@ struct Object
 	}
 
 
-	void setColor()
+	void setColor(std::vector<sf::Vertex>& vertices, sf::Color newColor)
 	{
-		
+		for (const unsigned int index : indexes)
+		{
+			vertices[index].color = newColor;
+		}
 	}
 };
 

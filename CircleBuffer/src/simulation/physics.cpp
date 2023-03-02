@@ -10,6 +10,16 @@ inline int randint(int start, int end) {
 	return rand() % (end - start) + start;
 }
 
+inline float randfloat(const float start, const float end)
+{
+	return (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (end - start)) + start;
+}
+
+inline sf::Vector2f randVector(const float start1, const float end1, const float start2, const float end2)
+{
+	return { randfloat(start1, end1), randfloat(start2, end2) };
+}
+
 
 
 
@@ -45,7 +55,10 @@ void Simulation::tickSim()
 	// rendering
 	objectInteraction();
 	m_buffer.render(&m_window);
-	m_buffer.update();
+	updatePositions();
+
+	if (m_updateBuffer)
+		m_buffer.update();
 
 	// finishing the frame
 	displayFrameRate();
@@ -53,27 +66,34 @@ void Simulation::tickSim()
 }
 
 
-void Simulation::initObjects()
-{
-	const sf::Vector2i min(55, 55);
-	const sf::Vector2u spacing(100, 100);
-	const sf::Vector2u amount(2, 5);
-
-	for (unsigned int x{ 0 }; x < amount.x; x++)
-	{
-		for (unsigned int y{ 0 }; y < amount.y; y++)
-		{
-			addObject(sf::Vector2f( min.x + x * spacing.x, min.y + y * spacing.y ), true);
-		}
-	}
-}
-
 void Simulation::addObject(const sf::Vector2f position, const bool update = true)
 {
 	m_objects.emplace_back(m_buffer.add(position, objectRadius, { 55, 55, 55 }));
+	m_objects.back().m_velocity = randVector(-3, 3, -3, 3);
+
+	const unsigned int i = m_objects.back().indexes[0];
+	constexpr float frequency = 0.00003f;
+
+	const unsigned int r = static_cast<int>(std::sin(frequency * i + 0) * 127 + 128);
+	const unsigned int g = static_cast<int>(std::sin(frequency * i + 2) * 127 + 128);
+	const unsigned int b = static_cast<int>(std::sin(frequency * i + 4) * 127 + 128);
+
+	m_objects.back().setColor(*m_buffer.getVertices(), sf::Color( r, g, b ));
 
 	if (update)
 		m_buffer.update();
+}
+
+
+void Simulation::updatePositions()
+{
+	const auto mousePos = sf::Vector2f(sf::Mouse::getPosition(m_window));
+	for (Entity& object : m_objects)
+	{
+		object.update(*m_buffer.getVertices(), mousePos);
+		const float f = 0.03f;
+		object.m_velocity += randVector(-f, f, -f, f);
+	}
 }
 
 
@@ -83,7 +103,7 @@ void Simulation::objectInteraction()
 		return;
 
 	const sf::Vector2i mouse = sf::Mouse::getPosition(m_window);
-	const float r = 70;
+	constexpr float r = 130;
 
 	if (mouseSide == false)
 		for (int i{ 0 }; i < summonCount; i++)

@@ -24,6 +24,11 @@ void Simulation::pollEvents()
 			{
 				m_paused = not m_paused;
 			}
+
+			else if (event.key.code == sf::Keyboard::B)
+			{
+				m_updateBuffer = not m_updateBuffer;
+			}
 		}
 
 		else if (event.type == sf::Event::MouseButtonPressed)
