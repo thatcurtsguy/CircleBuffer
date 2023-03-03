@@ -61,6 +61,7 @@ public:
 
 	[[nodiscard]] Object add(sf::Vector2f position, double radius, sf::Color color);
 	std::vector<sf::Vertex>* getVertices() { return &m_vertices; }
+	sf::VertexBuffer* getBuffer() { return &m_VertexBuffer; }
 
 	void remove(const Object* object);
 	void render(sf::RenderTarget* renderTarget) const;
