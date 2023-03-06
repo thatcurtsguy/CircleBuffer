@@ -24,15 +24,61 @@ Buffer::Buffer(const unsigned maxObjects, const unsigned objectPoints)
 }
 
 
+Object Buffer::handleOnePointPrimitive(const sf::Vector2f position, const sf::Color color)
+{
+	const unsigned int index = getNextIndex();
+	m_vertices[index].position = position;
+	m_vertices[index].color = color;
+	return Object{ {index}, position };
+}
+
+
+Object Buffer::handleThreePointPrimitive(const sf::Vector2f position, const sf::Color color, const double size)
+{
+	const std::vector<sf::Vertex> triangle = createTriangleAroundPoint(position, size);
+
+	Object object;
+	object.position = position;
+	addToVertexVector(object, color, triangle);
+	return object;
+}
+
+
+Object Buffer::handleFourPointPrimitive(const sf::Vector2f position, const sf::Color color, const double size)
+{
+	const std::vector<sf::Vertex> rectangle = createSquare(position, size);
+
+	// creating the object which will describe the Vertecies
+	Object object;
+	object.position = position;
+	addToVertexVector(object, color, rectangle);
+	return object;
+}
+
+
+
+
 Object Buffer::add(const sf::Vector2f position, const double radius, const sf::Color color)
 {
 	// if there is only one Vertex describing an object we can take a shortcut
 	if (m_ObjectPoints == 1)
 	{
-		const unsigned int index = getNextIndex();
-		m_vertices[index].position = position;
-		m_vertices[index].color = color;
-		return Object{ {index}, position };
+		return handleOnePointPrimitive(position, color);
+	}
+
+	else if (m_ObjectPoints == 2)
+	{
+		// TODO
+	}
+
+	else if (m_ObjectPoints == 3)
+	{
+		return handleThreePointPrimitive(position, color, radius);
+	}
+
+	else if (m_ObjectPoints == 4)
+	{
+		return handleFourPointPrimitive(position, color, radius);
 	}
 
 	// Create the vertex data for the circle
@@ -40,21 +86,26 @@ Object Buffer::add(const sf::Vector2f position, const double radius, const sf::C
 
 	// creating the object which will describe the Vertecies
 	Object object;
-	object.indexes.resize(triangles.size());
 	object.position = position;
 
-	// Append the vertices to m_vertices
-	const unsigned int startIndex = getNextIndex();
-
-	for (unsigned int i = 0; i < triangles.size(); i++)
-	{
-		m_vertices[startIndex + i].position = triangles[i].position;
-		m_vertices[startIndex + i].color = color;
-		object.indexes[i] = startIndex + i;
-	}
+	addToVertexVector(object, color, triangles);
 
 	return object;
 }
+
+void Buffer::addToVertexVector(Object& object, const sf::Color color, const std::vector<sf::Vertex>& vertices)
+{
+	const unsigned int startIndex = getNextIndex();
+	object.indexes.resize(vertices.size());
+
+	for (unsigned int i = 0; i < vertices.size(); i++)
+	{
+		m_vertices[startIndex + i].position = vertices[i].position;
+		m_vertices[startIndex + i].color = color;
+		object.indexes[i] = startIndex + i;
+	}
+}
+
 
 void Buffer::remove(const Object* object)
 {
@@ -98,6 +149,53 @@ std::vector<sf::Vertex> Buffer::createTriangleVertices(const double radius, cons
 	}
 	return triangles;
 }
+
+std::vector<sf::Vertex> Buffer::createSquare(const sf::Vector2f position, const double size) const
+{
+	// Calculate the half-size of the square
+	const float halfSize = size / 2.0f;
+
+	// Calculate the position of the top-left corner of the square
+	const auto topLeft = sf::Vector2f(position.x - halfSize, position.y - halfSize);
+
+	// Create an array of vertices for the square
+	sf::Vertex vertices[] = {
+		{topLeft, sf::Color::White},
+		{sf::Vector2f(topLeft.x + size, topLeft.y), sf::Color::White},
+		{sf::Vector2f(topLeft.x + size, topLeft.y + size), sf::Color::White},
+		{sf::Vector2f(topLeft.x, topLeft.y + size), sf::Color::White}
+	};
+
+	// Convert the vertex array to a vector and return it
+	std::vector result(vertices, vertices + std::size(vertices));
+	return result;
+}
+
+
+std::vector<sf::Vertex> Buffer::createTriangleAroundPoint(const sf::Vector2f position, const double size) const
+{
+	// Calculate the height of the equilateral triangle
+	const double height = size * sqrt(3) / 2.0f;
+
+	// Calculate the position of the top corner of the triangle
+	const sf::Vector2f top(position.x, position.y - height / 2.0f);
+
+	// Calculate the positions of the other two corners of the triangle
+	const sf::Vector2f left(top.x - size / 2.0f, top.y + height);
+	const sf::Vector2f right(top.x + size / 2.0f, top.y + height);
+
+	// Create an array of vertices for the triangle
+	sf::Vertex vertices[] = {
+		{top, sf::Color::White},
+		{left, sf::Color::White},
+		{right, sf::Color::White}
+	};
+
+	// Convert the vertex array to a vector and return it
+	std::vector result(vertices, vertices + std::size(vertices));
+	return result;
+}
+
 
 
 sf::Vector2f Buffer::idxToCoords(const unsigned idx, const double radius) const

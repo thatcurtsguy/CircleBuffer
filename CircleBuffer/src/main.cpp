@@ -9,15 +9,15 @@ int main()
 	const Settings simulationSettings(
 		1920,
 		1000,
-		400,
-		700,
+		200,
+		30,
 		false,
 
 		"Vertex Buffer Simulation",
 
-		500'000,
-		1,
-		6
+		100'000,
+		3,
+		5
 	);
 
 	Simulation simulation(simulationSettings);
