@@ -56,14 +56,10 @@ class Buffer
 
 public:
 	// constructor and detructor
-	explicit Buffer(unsigned int maxObjects, unsigned int objectPoints);
-	Object handleOnePointPrimitive(sf::Vector2f position, sf::Color color);
-	Object handleFourPointPrimitive(const sf::Vector2f position, const sf::Color color, const double size);
-	Object handleThreePointPrimitive(sf::Vector2f position, sf::Color color, double size);
+	explicit Buffer(unsigned maxObjects, unsigned objectPoints, sf::VertexBuffer::Usage usage);
 	~Buffer() = default;
 
 	[[nodiscard]] Object add(sf::Vector2f position, double radius, sf::Color color);
-	void addToVertexVector(Object& object, sf::Color color, const std::vector<sf::Vertex>& vertices);
 	std::vector<sf::Vertex>* getVertices() { return &m_vertices; }
 	sf::VertexBuffer* getBuffer() { return &m_VertexBuffer; }
 
@@ -73,6 +69,12 @@ public:
 
 
 private:
+	Object handleOnePointPrimitive(sf::Vector2f position, sf::Color color);
+	Object handleFourPointPrimitive(sf::Vector2f position, sf::Color color, double size);
+	Object handleThreePointPrimitive(sf::Vector2f position, sf::Color color, double size);
+
+	void addToVertexVector(Object& object, sf::Color color, const std::vector<sf::Vertex>& vertices);
+
 	[[nodiscard]] std::vector<sf::Vertex> createTriangleVertices(double radius, sf::Vector2f position) const;
 	[[nodiscard]] std::vector<sf::Vertex> createSquare(const sf::Vector2f position, const double size) const;
 	[[nodiscard]] std::vector<sf::Vertex> createTriangleAroundPoint(sf::Vector2f position, double size) const;
