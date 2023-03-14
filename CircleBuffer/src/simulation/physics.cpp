@@ -3,10 +3,12 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include <random>
+#include <thread>
+
 
 
 // random
-inline int randint(int start, int end) {
+inline int randint(const int start, const int end) {
 	return rand() % (end - start) + start;
 }
 
@@ -23,14 +25,17 @@ inline sf::Vector2f randVector(const float start1, const float end1, const float
 
 
 
-Simulation::Simulation(const Settings& settings) : Settings(settings), m_window(sf::RenderWindow(sf::VideoMode(screenWidth, screenHeight), title)),
-m_buffer(maxObjects, objectPoints)
+Simulation::Simulation(const Settings& settings)
+	: Settings(settings), m_window(sf::RenderWindow(sf::VideoMode(screenWidth, screenHeight), title)),
+	m_buffer(maxObjects, objectPoints, sf::VertexBuffer::Stream)
 {
 	m_window.setFramerateLimit(frameRate);
 	m_window.setVerticalSyncEnabled(vSync);
 
-	m_objects.reserve(maxObjects);
+	m_vertices = m_buffer.getVertices();
+	m_velocities.resize(maxObjects, sf::Vector2f());
 }
+
 
 Simulation::~Simulation() = default;
 
@@ -54,7 +59,9 @@ void Simulation::tickSim()
 	// rendering
 	objectInteraction();
 	m_buffer.render(&m_window);
-	updatePositions();
+
+	if (!m_paused)
+		updatePositions();
 
 	if (m_updateBuffer)
 		m_buffer.update();
@@ -67,31 +74,72 @@ void Simulation::tickSim()
 
 void Simulation::addObject(const sf::Vector2f position, const bool update = true)
 {
-	m_objects.emplace_back(m_buffer.add(position, objectRadius, { 55, 55, 55 }));
-	m_objects.back().m_velocity = randVector(-3, 3, -3, 3);
+	const auto i = static_cast<float>(add_index);
+	constexpr float frequency = 0.000009f;
 
-	const unsigned int i = m_objects.back().indexes[0];
-	constexpr float frequency = 0.00003f;
+	const auto r = static_cast<sf::Uint8>(std::sin(frequency * i + 0) * 127 + 128);
+	const auto g = static_cast<sf::Uint8>(std::sin(frequency * i + 2) * 127 + 128);
+	//const auto b = static_cast<sf::Uint8>(std::sin(frequency * i + 4) * 127 + 128);
 
-	const unsigned int r = static_cast<int>(std::sin(frequency * i + 0) * 127 + 128);
-	const unsigned int g = static_cast<int>(std::sin(frequency * i + 2) * 127 + 128);
-	const unsigned int b = static_cast<int>(std::sin(frequency * i + 4) * 127 + 128);
+	m_vertices->at(add_index).position = position;
+	m_vertices->at(add_index).color = {r, g, 255};
+	m_velocities.at(add_index) = randVector(-initialVelocity, initialVelocity, -initialVelocity, initialVelocity);
 
-	m_objects.back().setColor(*m_buffer.getVertices(), sf::Color( r, g, 255 ));
+	add_index++;
 
 	if (update)
 		m_buffer.update();
 }
 
+void Simulation::updatePosition(const unsigned int index, const sf::Vector2f mousePos)
+{
+	const sf::Vector2f delta = mousePos - m_vertices->at(index).position;
+	const float distSq = delta.x * delta.x + delta.y * delta.y;
+
+	if (distSq > deadzone)
+	{
+		const float f = attractionStrength / distSq;
+		m_velocities.at(index) += delta * f;
+	}
+
+	// friction
+	m_velocities.at(index) /= friction;
+
+	m_vertices->at(index).position += m_velocities.at(index);
+}
 
 void Simulation::updatePositions()
 {
 	const auto mousePos = sf::Vector2f(sf::Mouse::getPosition(m_window));
-	for (Entity& object : m_objects)
+
+	// Split the objects into eight roughly equal parts
+	const unsigned int objectsPerThread = static_cast<unsigned>(add_index) / numThreads;
+	std::vector<std::thread> threads(numThreads);
+
+	auto updateFunc = [&](const unsigned int startIndex, const unsigned int endIndex) {
+		for (unsigned int i = startIndex; i < endIndex; ++i)
+		{
+			updatePosition(i, mousePos);
+		}
+	};
+
+	// Start the threads
+	for (unsigned int i = 0; i < numThreads; ++i)
 	{
-		object.update(*m_buffer.getVertices(), mousePos);
-		const float f = 0.03f;
-		object.m_velocity += randVector(-f, f, -f, f);
+		unsigned int startIndex = i * objectsPerThread;
+		unsigned int endIndex = (i + 1) * objectsPerThread;
+		if (i == numThreads - 1)
+		{
+			endIndex = static_cast<int>(add_index);
+		}
+
+		threads.at(i) = std::thread(updateFunc, startIndex, endIndex);
+	}
+
+	// Wait for the threads to finish
+	for (unsigned int i = 0; i < numThreads; ++i)
+	{
+		threads.at(i).join();
 	}
 }
 
@@ -101,18 +149,17 @@ void Simulation::objectInteraction()
 	if (mousePressed == false)
 		return;
 
-	const sf::Vector2i mouse = sf::Mouse::getPosition(m_window);
-	constexpr float r = 130;
+	const auto mouse = sf::Vector2f(sf::Mouse::getPosition(m_window));
 
 	if (mouseSide == false)
-		for (int i{ 0 }; i < summonCount; i++)
+		for (unsigned int i{ 0 }; i < summonCount; i++)
 		{
-			const sf::Vector2f position(mouse.x + randint(-r, r), mouse.y + randint(-r, r));
+			const sf::Vector2f position(mouse.x + randfloat(-spawnRad, spawnRad), mouse.y + randfloat(-spawnRad, spawnRad));
 			addObject(position, false);
 		}
 
 	else if (mouseSide == true)
-		removeObject(sf::Vector2f(mouse), r, false);
+		removeObject(sf::Vector2f(mouse), spawnRad, false);
 
 	m_buffer.update();
 }
@@ -120,12 +167,14 @@ void Simulation::objectInteraction()
 
 void Simulation::removeObject(const sf::Vector2f position, const float range, const bool update=true)
 {
+	/*
 	unsigned int index = 0;
-	for (const Object& object : m_objects)
+	for (const Entity& object : m_objects)
 	{
-		const sf::Vector2f delta = position - object.position;
+		const sf::Vector2f delta = position - object.m_position;
+		const float dist = delta.x * delta.x + delta.y * delta.y;
 
-		if (const float dist = delta.x * delta.x + delta.y * delta.y; dist < (objectRadius*objectRadius + range*range))
+		if (dist < (objectRadius*objectRadius + range*range))
 		{
 			m_buffer.remove(&object);
 			m_objects.erase(m_objects.begin() + index);
@@ -137,4 +186,6 @@ void Simulation::removeObject(const sf::Vector2f position, const float range, co
 
 	if (update)
 		m_buffer.update();
+
+	*/
 }

@@ -14,7 +14,7 @@ Buffer::Buffer(const unsigned maxObjects, const unsigned objectPoints, const sf:
 	// preparing containers for oncoming objects
 	m_vertices.resize(m_totalExpectedVertices, sf::Vertex());
 
-	// vertices indexes are relative to the actual Object, meaning 1 index will hold info for (objectPoints * 3) Vertices
+	// vertices indexes are relative to the actual Allocations, meaning 1 index will hold info for (objectPoints * 3) Vertices
 	m_verticesIndexes = std::vector<unsigned int>(m_maxObjects);
 	std::iota(m_verticesIndexes.begin(), m_verticesIndexes.end(), 0);
 	
@@ -23,43 +23,51 @@ Buffer::Buffer(const unsigned maxObjects, const unsigned objectPoints, const sf:
 	m_VertexBuffer.create(m_totalExpectedVertices);
 }
 
-
-Object Buffer::handleOnePointPrimitive(const sf::Vector2f position, const sf::Color color)
+Allocations Buffer::handleOnePointPrimitive(const sf::Vector2f position, const sf::Color color)
 {
 	const unsigned int index = getNextIndex();
-	m_vertices[index].position = position;
-	m_vertices[index].color = color;
-	return Object{ {index}, position };
+	m_vertices.at(index).position = position;
+	m_vertices.at(index).color = color;
+	return Allocations{ {index} };
 }
 
 
-Object Buffer::handleThreePointPrimitive(const sf::Vector2f position, const sf::Color color, const double size)
+Allocations Buffer::handleThreePointPrimitive(const sf::Vector2f position, const sf::Color color, const float size)
 {
 	const std::vector<sf::Vertex> triangle = createTriangleAroundPoint(position, size);
 
-	Object object;
-	object.position = position;
+	Allocations object;
 	addToVertexVector(object, color, triangle);
 	return object;
 }
 
 
-Object Buffer::handleFourPointPrimitive(const sf::Vector2f position, const sf::Color color, const double size)
+Allocations Buffer::handleFourPointPrimitive(const sf::Vector2f position, const sf::Color color, const float size)
 {
 	const std::vector<sf::Vertex> rectangle = createSquare(position, size);
 
 	// creating the object which will describe the Vertecies
-	Object object;
-	object.position = position;
+	Allocations object;
 	addToVertexVector(object, color, rectangle);
 	return object;
 }
 
 
-
-
-Object Buffer::add(const sf::Vector2f position, const double radius, const sf::Color color)
+void Buffer::overflowManagement() const
 {
+	if (m_allocationsIssued != m_maxObjects)
+		return;
+
+	throw std::overflow_error("[Buffer]: Too many Allocations Issued, OverFlow detected");
+}
+
+
+Allocations Buffer::add(const sf::Vector2f position, const float radius, const sf::Color color)
+{
+	// testing for OverFlow
+	overflowManagement();
+	m_allocationsIssued++;
+
 	// if there is only one Vertex describing an object we can take a shortcut
 	if (m_ObjectPoints == 1)
 	{
@@ -85,29 +93,26 @@ Object Buffer::add(const sf::Vector2f position, const double radius, const sf::C
 	const std::vector<sf::Vertex> triangles = createTriangleVertices(radius, position);
 
 	// creating the object which will describe the Vertecies
-	Object object;
-	object.position = position;
-
+	Allocations object;
 	addToVertexVector(object, color, triangles);
-
 	return object;
 }
 
-void Buffer::addToVertexVector(Object& object, const sf::Color color, const std::vector<sf::Vertex>& vertices)
+void Buffer::addToVertexVector(Allocations& object, const sf::Color color, const std::vector<sf::Vertex>& vertices)
 {
 	const unsigned int startIndex = getNextIndex();
 	object.indexes.resize(vertices.size());
 
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
-		m_vertices[startIndex + i].position = vertices[i].position;
-		m_vertices[startIndex + i].color = color;
-		object.indexes[i] = startIndex + i;
+		m_vertices.at(startIndex + i).position = vertices.at(i).position;
+		m_vertices.at(startIndex + i).color = color;
+		object.indexes.at(i) = startIndex + i;
 	}
 }
 
 
-void Buffer::remove(const Object* object)
+void Buffer::remove(const Allocations* object)
 {
 	const unsigned int objectMinIndex = object->indexes[0];
 
@@ -119,6 +124,8 @@ void Buffer::remove(const Object* object)
 	{
 		m_vertices.at(index).color = sf::Color(0, 0, 0, 0);
 	}
+
+	m_allocationsIssued--;
 }
 
 
@@ -133,24 +140,40 @@ void Buffer::update()
 	m_VertexBuffer.update(m_vertices.data(), m_vertices.size(), 0);
 }
 
+void Buffer::setVertexPositions(const Allocations& allocations, const sf::Vector2f deltaPosition)
+{
+	for (const unsigned int index : allocations.indexes)
+	{
+		m_vertices.at(index).position += deltaPosition;
+	}
+}
 
-std::vector<sf::Vertex> Buffer::createTriangleVertices(const double radius, const sf::Vector2f position) const
+void Buffer::setColor(const Allocations& allocations, const sf::Color newColor)
+{
+	for (const unsigned int index : allocations.indexes)
+	{
+		m_vertices.at(index).color = newColor;
+	}
+}
+
+
+std::vector<sf::Vertex> Buffer::createTriangleVertices(const float radius, const sf::Vector2f position) const
 {
 	std::vector<sf::Vertex> triangles(static_cast<int>(m_ObjectPoints * 3));
 
 	unsigned int index = 0;
 	for (unsigned int i = 0; i < m_ObjectPoints; i++)
 	{
-		triangles[index + 0] = sf::Vertex({position + idxToCoords(i + 0, radius)}); // vertex 1
-		triangles[index + 1] = sf::Vertex({ position + idxToCoords(i + 1, radius) }); // vertex 2
-		triangles[index + 2] = position; // vertex center
+		triangles.at(index + 0) = sf::Vertex({position + idxToCoords(i + 0, radius)}); // vertex 1
+		triangles.at(index + 1) = sf::Vertex({ position + idxToCoords(i + 1, radius) }); // vertex 2
+		triangles.at(index + 2) = position; // vertex center
 
 		index += 3;
 	}
 	return triangles;
 }
 
-std::vector<sf::Vertex> Buffer::createSquare(const sf::Vector2f position, const double size) const
+std::vector<sf::Vertex> Buffer::createSquare(const sf::Vector2f position, const float size) const
 {
 	// Calculate the half-size of the square
 	const float halfSize = size / 2.0f;
@@ -172,10 +195,10 @@ std::vector<sf::Vertex> Buffer::createSquare(const sf::Vector2f position, const 
 }
 
 
-std::vector<sf::Vertex> Buffer::createTriangleAroundPoint(const sf::Vector2f position, const double size) const
+std::vector<sf::Vertex> Buffer::createTriangleAroundPoint(const sf::Vector2f position, const float size) const
 {
 	// Calculate the height of the equilateral triangle
-	const double height = size * sqrt(3) / 2.0f;
+	const float height = size * static_cast<float>(sqrt(3)) / 2.0f;
 
 	// Calculate the position of the top corner of the triangle
 	const sf::Vector2f top(position.x, position.y - height / 2.0f);
@@ -198,16 +221,16 @@ std::vector<sf::Vertex> Buffer::createTriangleAroundPoint(const sf::Vector2f pos
 
 
 
-sf::Vector2f Buffer::idxToCoords(const unsigned idx, const double radius) const
+sf::Vector2f Buffer::idxToCoords(const unsigned idx, const float radius) const
 {
-	static const double angleIncrement = 2 * PI / static_cast<double>(m_ObjectPoints);
+	static const auto angleIncrement = static_cast <float>(2 * PI / m_ObjectPoints);
 
-	const double angle = static_cast<double>(idx) * angleIncrement;
-	const double cosAngle = std::cos(angle);
-	const double sinAngle = std::sin(angle);
+	const float angle = static_cast<float>(idx) * angleIncrement;
+	const float cosAngle = std::cos(angle);
+	const float sinAngle = std::sin(angle);
 
-	const double x = cosAngle * radius;
-	const double y = sinAngle * radius;
+	const float x = cosAngle * radius;
+	const float y = sinAngle * radius;
 
 	return { static_cast<float>(x), static_cast<float>(y) };
 }
@@ -250,18 +273,3 @@ unsigned int Buffer::getNextIndex()
 	m_verticesIndexes.pop_back();
 	return index;
 }
-
-/*
-Object Buffer::makeObject(
-	const sf::Vector2f position, const sf::Color color, const std::vector<sf::Vertex>& vertices, 
-	const std::vector<unsigned>& indexes)
-{
-	Object object{ indexes, position };
-
-	for (const unsigned int index : object.indexes)
-	{
-		m_vertices[index].position = triangles[i].position;
-		m_vertices[index].color = color;
-	}
-}
-*/

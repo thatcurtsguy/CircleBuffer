@@ -1,6 +1,7 @@
 #include "simulation.hpp"
 #include <SFML/Graphics.hpp>
 
+
 void Simulation::pollEvents()
 {
 	sf::Event event{};
@@ -34,7 +35,6 @@ void Simulation::pollEvents()
 		else if (event.type == sf::Event::MouseButtonPressed)
 		{
 			mousePressed = true;
-			const sf::Vector2i mouse = sf::Mouse::getPosition(m_window);
 
 			if (event.mouseButton.button == sf::Mouse::Left)
 				mouseSide = false;
@@ -56,7 +56,7 @@ void Simulation::displayFrameRate()
 	const sf::Int32 millisecondsPerFrame = m_clock.restart().asMilliseconds();
 
 	std::ostringstream oss;
-	oss << title << " " << millisecondsPerFrame << " millisecondsPerFrame" << " " << "objects: " << m_objects.size();
+	oss << title << " " << millisecondsPerFrame << " millisecondsPerFrame" << " " << "objects: " << add_index;
 	const std::string stringFrameRate = oss.str();
 	m_window.setTitle(stringFrameRate);
 }
