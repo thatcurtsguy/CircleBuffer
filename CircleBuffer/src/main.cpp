@@ -1,34 +1,27 @@
 #include "simulation/simulation.hpp"
 #include <ctime>
-#include <random>
-
-/*
- * TODO:
- * - random food position and generation
- * - create the snake
- * - snake movement
- * - snake -> food collision
- * - snake -> snake collision
- * - snake -> wall collision
- */
 
 int main()
 {
 	// initilising random
-	std::default_random_engine rng(std::random_device{}());
+	std::srand(static_cast<unsigned>(time(nullptr)));
 
 	const Settings simulationSettings(
 		1920,
 		1000,
 		400,
-		700,
+		4900,
 		false,
-
+		8,
 		"Vertex Buffer Simulation",
-
-		600'000,
+		1'500'000,
 		1,
-		5
+		5.0f,
+		0,
+		10,
+		1.6f,
+		550,
+		0
 	);
 
 	Simulation simulation(simulationSettings);

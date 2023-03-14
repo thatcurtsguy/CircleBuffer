@@ -7,30 +7,33 @@
 
 #include <chrono>
 
-
-struct Entity : Object
+/*
+struct Entity : Allocations
 {
+	sf::Vector2f m_position;
 	sf::Vector2f m_velocity;
 
-	explicit Entity(const Object& object) : Object(object)
-	{
+	explicit Entity(const Allocations& allocations) : Allocations(allocations) {}
 
-	}
-
-	void update(std::vector<sf::Vertex>& vertices, const sf::Vector2f mousePos)
+	sf::Vector2f update(const sf::Vector2f mousePos)
 	{
-		const sf::Vector2f delta = mousePos - position;
+		const sf::Vector2f delta = mousePos - m_position;
 		const float distSq = delta.x * delta.x + delta.y * delta.y;
-		const float f = 20 / distSq;
-		m_velocity += (mousePos - position) * f;
 
-		setPosition(vertices, position + m_velocity);
+		if (distSq > 0)
+		{
+			const float f = 20 / distSq;
+			m_velocity += delta * f;
+		}
 
+		// friction
 		m_velocity /= 1.1f;
+
+		m_position += m_velocity;
+		return m_velocity;
 	}
-
 };
-
+*/
 
 struct Settings
 {
@@ -40,12 +43,18 @@ struct Settings
 	const unsigned int summonCount;
 
 	const bool vSync;
+	const unsigned int numThreads;
 
 	const std::string title;
 
 	const unsigned int maxObjects;
 	const unsigned int objectPoints;
-	const double objectRadius;
+	const float objectRadius;
+	const float spawnRad;
+	const float initialVelocity;
+	const float friction;
+	const float attractionStrength;
+	const float deadzone;
 };
 
 
@@ -59,12 +68,15 @@ class Simulation : Settings
 	bool m_updateBuffer = true;
 
 	Buffer m_buffer;
-	std::vector<Entity> m_objects;
+	std::vector<sf::Vector2f> m_velocities;
+	std::vector<sf::Vertex>* m_vertices;
 
 	bool mousePressed = false;
-	bool mouseSide; // false: left, true: right
+	bool mouseSide = false; // false: left, true: right
 
+	unsigned int add_index = 0;
 
+	
 public:
 	// constructor and destructor
 	explicit Simulation(const Settings& settings);
@@ -75,9 +87,9 @@ public:
 private:
 	void tickSim();
 	void pollEvents();
-	void initObjects();
 	void displayFrameRate();
 	void addObject(sf::Vector2f position, bool update);
+	void updatePosition(unsigned index, sf::Vector2f mousePos);
 	void updatePositions();
 	void objectInteraction();
 	void removeObject(sf::Vector2f position, float range, bool update);
