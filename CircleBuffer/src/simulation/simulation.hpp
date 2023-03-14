@@ -26,7 +26,7 @@ struct Entity : Object
 
 		setPosition(vertices, position + m_velocity);
 
-		m_velocity /= 1.001f;
+		m_velocity /= 1.1f;
 	}
 
 };

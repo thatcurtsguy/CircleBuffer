@@ -43,6 +43,7 @@ public:
 	void update()
 	{
 		m_position += m_velocity;
+		m_velocity /= 1.1;
 		borderCollision();
 	}
 };

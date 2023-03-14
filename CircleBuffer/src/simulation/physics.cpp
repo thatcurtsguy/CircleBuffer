@@ -32,7 +32,6 @@ m_buffer(maxObjects, objectPoints)
 	m_objects.reserve(maxObjects);
 }
 
-
 Simulation::~Simulation() = default;
 
 void Simulation::run()
@@ -78,7 +77,7 @@ void Simulation::addObject(const sf::Vector2f position, const bool update = true
 	const unsigned int g = static_cast<int>(std::sin(frequency * i + 2) * 127 + 128);
 	const unsigned int b = static_cast<int>(std::sin(frequency * i + 4) * 127 + 128);
 
-	m_objects.back().setColor(*m_buffer.getVertices(), sf::Color( r, g, b ));
+	m_objects.back().setColor(*m_buffer.getVertices(), sf::Color( r, g, 255 ));
 
 	if (update)
 		m_buffer.update();
