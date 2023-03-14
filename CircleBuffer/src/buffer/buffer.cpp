@@ -4,7 +4,7 @@
 
 
 
-Buffer::Buffer(const unsigned maxObjects, const unsigned objectPoints)
+Buffer::Buffer(const unsigned maxObjects, const unsigned objectPoints, const sf::VertexBuffer::Usage usage)
 	: m_maxObjects(maxObjects), m_ObjectPoints(objectPoints), m_verticesMultiplier(getMultiplier(objectPoints))
 {
 	// the total expected vertecies (m_maxObjects * m_ObjectPoints) is multiplied by three as we add a point every 3
@@ -19,7 +19,7 @@ Buffer::Buffer(const unsigned maxObjects, const unsigned objectPoints)
 	std::iota(m_verticesIndexes.begin(), m_verticesIndexes.end(), 0);
 	
 
-	m_VertexBuffer = sf::VertexBuffer(getPrimitiveType(objectPoints), sf::VertexBuffer::Stream);
+	m_VertexBuffer = sf::VertexBuffer(getPrimitiveType(objectPoints), usage);
 	m_VertexBuffer.create(m_totalExpectedVertices);
 }
 
