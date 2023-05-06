@@ -2,12 +2,6 @@
 #include <SFML/Graphics.hpp>
 
 /*
- * NOTES
- * - cannot store more than 4 billion objects
- */
-
-
-/*
  * TODO:
  * - apon generation, turn all of the vertecies into circle molds so they can be processed
  * - fix the removal bug
@@ -77,4 +71,3 @@ private:
 	[[nodiscard]] static unsigned int getMultiplier(unsigned int objectPoints);
 	[[nodiscard]] unsigned int getNextIndex();
 };
-
